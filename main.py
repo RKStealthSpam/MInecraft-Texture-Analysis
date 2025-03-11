@@ -26,8 +26,39 @@ rect_width = 50
 rect_height = 30
 speed_x = 150  # pixels per second
 speed_y = 100  # pixels per second
-print(label2.height)
 oldtime = time.time()
+
+
+def get_rgb_values(grv_image):
+    if not isinstance(grv_image, pyglet.image.ImageData):
+        raise TypeError
+
+    grv_image_data = grv_image.get_image_data()
+    grv_data = grv_image_data.get_data('RGB', 3*grv_image.width)
+
+    grv_rgb_data = []
+    for grv_value in range(len(grv_data)//3):
+        grv_rgb_data.append((grv_data[(grv_value * 3) + 0],
+                             grv_data[(grv_value * 3) + 1],
+                             grv_data[(grv_value * 3) + 2]))
+
+    return grv_rgb_data
+
+
+def get_average_rgb(gar_list):
+    gar_r = 0
+    gar_g = 0
+    gar_b = 0
+
+    for gar_pixel in range(len(gar_list)):
+        gar_r += gar_list[gar_pixel][0]
+        gar_g += gar_list[gar_pixel][1]
+        gar_b += gar_list[gar_pixel][2]
+
+    return (round(gar_r/len(gar_list)),
+            round(gar_g/len(gar_list)),
+            round(gar_b/len(gar_list)))
+
 
 @window.event
 def on_draw():
@@ -94,7 +125,7 @@ def image_update(dt):
     if len(pointsList) > 31:
         pointsList = pointsList[-32:]
 
-    label2.text = str(1/(time.time()-oldtime))
+    label2.text = str(1//(time.time()-oldtime))
     oldtime = time.time()
 
 pyglet.clock.schedule_interval(image_update, 1/30)
