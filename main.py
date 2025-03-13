@@ -1,6 +1,8 @@
 import pyglet
 import random
 import time
+import os
+import ast
 
 window = pyglet.window.Window()
 window.set_caption('Minecraft Texture Analysis')
@@ -27,6 +29,11 @@ rect_height = 30
 speed_x = 150  # pixels per second
 speed_y = 100  # pixels per second
 oldtime = time.time()
+
+
+def  sort_colors(sc_profiles, sc_focus, sc_mode):
+    pass
+
 
 
 def get_rgb_values(grv_image):
@@ -58,6 +65,60 @@ def get_average_rgb(gar_list):
     return (round(gar_r/len(gar_list)),
             round(gar_g/len(gar_list)),
             round(gar_b/len(gar_list)))
+
+
+def rgb_to_hsv(rth_rgb):
+    if not isinstance(rth_rgb, tuple) and len(rth_rgb) != 3:
+        raise TypeError
+
+    rth_r, rth_g, rth_b, = rth_rgb[0]/255, rth_rgb[1]/255, rth_rgb[2]/255
+    rth_max = max(rth_r, rth_g, rth_b)
+    rth_min = min(rth_r, rth_g, rth_b)
+    rth_c = rth_max - rth_min
+    if rth_max == rth_min:
+        rth_h = 0
+    elif rth_max == rth_r:
+        rth_h = (60 * ((rth_g - rth_b) / rth_c) + 360) % 360
+    elif rth_max == rth_g:
+        rth_h = (60 * ((rth_b - rth_r) / rth_c) + 120) % 360
+    else:
+        rth_h = (60 * ((rth_r - rth_g) / rth_c) + 240) % 360
+
+    if rth_max == 0:
+        rth_s = 0
+    else:
+        rth_s = (rth_c / rth_max) * 100
+
+    rth_v = rth_max * 100
+
+    return round(rth_h), round(rth_s), round(rth_v)
+
+
+texture_data = open(r'texture_data.txt', 'w').close()
+texture_data = open(r'texture_data.txt', 'a')
+image_names = os.listdir(r'Blocks that I just think are different')
+for texture in range(len(image_names)):
+    color_info = []
+    image_name = image_names[texture]
+    image = pyglet.image.load(filename=rf'Blocks that I just think are different/{image_name}')
+    rgb_data = get_rgb_values(image)
+    average_rgb = get_average_rgb(rgb_data)
+    average_hsl = rgb_to_hsv(average_rgb)
+
+    color_profile = [image_name, average_rgb, average_hsl]
+    texture_data.write(str(color_profile) + '\n')
+texture_data.close()
+
+
+texture_data = open(r'texture_data.txt', 'r')
+text_data = texture_data.readlines()
+texture_data.close()
+
+color_profiles = []
+for entry in range(len(text_data)):
+    color_profiles.append(ast.literal_eval(text_data[entry]))
+    print(color_profiles[entry])
+
 
 
 @window.event
