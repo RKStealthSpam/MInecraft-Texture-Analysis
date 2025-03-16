@@ -3,6 +3,7 @@ import random
 import time
 import os
 import ast
+import math
 
 window = pyglet.window.Window()
 window.set_caption('Minecraft Texture Analysis')
@@ -29,10 +30,6 @@ rect_height = 30
 speed_x = 150  # pixels per second
 speed_y = 100  # pixels per second
 oldtime = time.time()
-
-
-def  sort_colors(sc_profiles, sc_focus, sc_mode):
-    pass
 
 
 
@@ -92,6 +89,18 @@ def rgb_to_hsv(rth_rgb):
     rth_v = rth_max * 100
 
     return round(rth_h), round(rth_s), round(rth_v)
+
+
+def hue_distance(hd_hue_1, hd_hue_2):
+    return
+
+# I don't even know what I'm doing right now I need more sleep
+
+
+def sort_hsv(sh_profiles, sh_focus='value', sh_threshold=(0, 0, 0), sh_hsv_target=None):
+    if sh_focus == 'value':
+        pass
+
 
 
 texture_data = open(r'texture_data.txt', 'w').close()
