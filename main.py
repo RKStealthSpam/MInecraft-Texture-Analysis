@@ -5,7 +5,7 @@ import os
 import ast
 import math
 
-window = pyglet.window.Window()
+window = pyglet.window.Window(height=2048)
 window.set_caption('Minecraft Texture Analysis')
 label = pyglet.text.Label('Minecraft Texture Analysis',
                           font_name='Verdana',
@@ -16,9 +16,9 @@ label = pyglet.text.Label('Minecraft Texture Analysis',
 label2 = pyglet.text.Label('TEST', x=1, y=1, z=1, color=(255, 0, 0), height=16)
 
 
-image = pyglet.image.load(filename=r'Blocks that I just think are different/oak_planks.png')
-sprite = pyglet.sprite.Sprite(image)
-sprite.scale = (100/16)
+#image = pyglet.image.load(filename=r'Blocks that I just think are different/oak_planks.png')
+#sprite = pyglet.sprite.Sprite(image)
+#sprite.scale = (64/16)
 
 img_coords = (1, 2, 0)
 pointsList = [img_coords]
@@ -91,32 +91,102 @@ def rgb_to_hsv(rth_rgb):
     return round(rth_h), round(rth_s), round(rth_v)
 
 
-def hue_distance(hd_hue_1, hd_hue_2):
-    return
-
-# I don't even know what I'm doing right now I need more sleep
-
-
-def sort_hsv(sh_profiles, sh_focus='value', sh_threshold=(0, 0, 0), sh_hsv_target=None):
-    if sh_focus == 'value':
-        pass
+def hsv_distances(hd_hsv_1, hd_hsv_2):
+    hd_hue_delta = math.fabs(hd_hsv_2[0] - hd_hsv_1[0])
+    #if hd_hue_delta > 180:
+    #    hd_hue_delta = math.fabs(360 - hd_hue_delta)
 
 
+    hd_sat_delta = math.sqrt((hd_hsv_1[1] - hd_hsv_2[1]) ** 2)
 
-texture_data = open(r'texture_data.txt', 'w').close()
-texture_data = open(r'texture_data.txt', 'a')
-image_names = os.listdir(r'Blocks that I just think are different')
-for texture in range(len(image_names)):
-    color_info = []
-    image_name = image_names[texture]
-    image = pyglet.image.load(filename=rf'Blocks that I just think are different/{image_name}')
-    rgb_data = get_rgb_values(image)
-    average_rgb = get_average_rgb(rgb_data)
-    average_hsl = rgb_to_hsv(average_rgb)
+    hd_val_delta = math.sqrt((hd_hsv_1[2] - hd_hsv_2[2]) ** 2)
 
-    color_profile = [image_name, average_rgb, average_hsl]
-    texture_data.write(str(color_profile) + '\n')
-texture_data.close()
+    return tuple((round(hd_hue_delta), round(hd_sat_delta), round(hd_val_delta)))
+
+
+def rgb_distance(rd_1, rd_2):
+    rd_distance = math.sqrt((rd_1[0] - rd_2[0]) ** 2 + (rd_1[1] - rd_2[1]) ** 2 + (rd_1[2] - rd_2[2]) ** 2)
+    return rd_distance
+
+
+def sort_rgb(sr_profiles, sr_target_rgb, sr_hsv_threshold):
+    sr_output = []
+    sr_target_hsv = rgb_to_hsv(sr_target_rgb)
+
+    for sr_profile in range(len(sr_profiles)):
+        sr_rgb = sr_profiles[sr_profile][1]
+        sr_hsv = sr_profiles[sr_profile][2]
+
+        sr_rgb_distance = rgb_distance(sr_target_rgb, sr_rgb)
+        sr_hsv_distances = hsv_distances(sr_target_hsv, sr_hsv)
+
+        if sr_hsv_threshold != 0 and math.fabs(sr_hsv_distances[0]/180) > sr_hsv_threshold[0]:
+            pass
+        elif sr_hsv_threshold != 0 and math.fabs(sr_hsv_distances[1]/100) > sr_hsv_threshold[1]:
+            pass
+        elif sr_hsv_threshold != 0 and math.fabs(sr_hsv_distances[2]/100) > sr_hsv_threshold[2]:
+            pass
+        else:
+            sr_output.append([sr_profiles[sr_profile][0],
+                               sr_profiles[sr_profile][1],
+                               sr_profiles[sr_profile][2],
+                               round(sr_rgb_distance, 3),
+                               sr_hsv_distances])
+
+    sr_sort_by_rgb_distance = sorted(sr_output, key=lambda tup: tup[3])
+
+    return sr_sort_by_rgb_distance
+
+
+def sort_hsv(sh_profiles, sh_target_rgb, sh_hsv_threshold, sh_hsv_weights):
+    sh_output = []
+    for sh_profile in range(len(sh_profiles)):
+        sh_hsv = sh_profiles[sh_profile][2]
+        sh_rgb = sh_profiles[sh_profile][1]
+        sh_target_hsv = rgb_to_hsv(sh_target_rgb)
+        sh_hsv_distances = hsv_distances(sh_target_hsv, sh_hsv)
+        sh_rgb_distance = rgb_distance(sh_target_rgb, sh_rgb)
+        print(sh_profiles[sh_profile][0] + '      ' + str(sh_hsv_distances))
+
+        if sh_hsv_threshold != 0 and math.fabs(sh_hsv_distances[0]/360) > sh_hsv_threshold[0]:
+            pass
+        elif sh_hsv_threshold != 0 and math.fabs(sh_hsv_distances[1]/100) > sh_hsv_threshold[1]:
+            pass
+        elif sh_hsv_threshold != 0 and math.fabs(sh_hsv_distances[2]/100) > sh_hsv_threshold[2]:
+            pass
+        else:
+            sh_hsv_score = ((sh_hsv_distances[0] / 360 * sh_hsv_weights[0]) +
+                            (sh_hsv_distances[1] / 100 * sh_hsv_weights[1]) +
+                            (sh_hsv_distances[2] / 100 * sh_hsv_weights[2]) +
+                            (sh_rgb_distance * sh_hsv_weights[3] / 441)) / (sum(sh_hsv_weights))
+
+            sh_output.append([sh_profiles[sh_profile][0],
+                              sh_profiles[sh_profile][1],
+                              sh_profiles[sh_profile][2],
+                              round(sh_hsv_score, 3),
+                              sh_hsv_distances])
+
+    sh_sort_by_rgb_distance = sorted(sh_output, key=lambda tup: tup[3])
+    return sh_sort_by_rgb_distance
+
+def text_data_rewrite():
+    global texture_data
+    global image
+
+    texture_data = open(r'texture_data.txt', 'w').close()
+    texture_data = open(r'texture_data.txt', 'a')
+    image_names = os.listdir(r'Blocks that I just think are different')
+    for texture in range(len(image_names)):
+        color_info = []
+        image_name = image_names[texture]
+        image = pyglet.image.load(filename=rf'Blocks that I just think are different/{image_name}')
+        rgb_data = get_rgb_values(image)
+        average_rgb = get_average_rgb(rgb_data)
+        average_hsl = rgb_to_hsv(average_rgb)
+
+        color_profile = [image_name, average_rgb, average_hsl]
+        texture_data.write(str(color_profile) + '\n')
+    texture_data.close()
 
 
 texture_data = open(r'texture_data.txt', 'r')
@@ -126,18 +196,57 @@ texture_data.close()
 color_profiles = []
 for entry in range(len(text_data)):
     color_profiles.append(ast.literal_eval(text_data[entry]))
-    print(color_profiles[entry])
+    #print(color_profiles[entry])
+
+image_name = 'red_concrete.png'
+image = pyglet.image.load(filename=rf'Blocks that I just think are different/{image_name}')
+image_data = get_rgb_values(image)
+image_average = get_average_rgb(image_data)
+#sorted_rgb = sort_rgb(color_profiles, (255, 0, 0), (0.5, 0.5, 1))
+input_rgb = (0, 0, 0)
+sorted_hsv = sort_hsv(color_profiles, input_rgb, (1, 0.2, 1), (0.01, 0.01, 2, 0.005))
 
 
+for profile in range(len(sorted_hsv)):
+    print(f'{sorted_hsv[profile][0]:<40} '
+          f'{str(sorted_hsv[profile][1][0]):<4} {str(sorted_hsv[profile][1][1]):<4} {str(sorted_hsv[profile][1][2]):<8}'
+          f'{str(sorted_hsv[profile][2][0]):<4} {str(sorted_hsv[profile][2][1]):<4} {str(sorted_hsv[profile][2][2]):<8}'
+          f'{str(sorted_hsv[profile][3]):<12}'
+          f'{str(sorted_hsv[profile][4][0]):<4} {str(sorted_hsv[profile][4][1]):<4} {str(sorted_hsv[profile][4][2]):<8}')
+
+print(len(sorted_hsv))
+
+def draw_icons(dt):
+    global image
+    global sorted_hsv
+
+    columns = (len(sorted_hsv) // 32) + 1
+    window.width = columns * 256
+    for texture_num in range(len(sorted_hsv)):
+        column = texture_num // 32
+        image_name = sorted_hsv[(column * 32) + (texture_num % 32)][0]
+        image = pyglet.image.load(filename=rf'Blocks that I just think are different/{image_name}')
+        sprite = pyglet.sprite.Sprite(image)
+        sprite.scale = 4
+        sprite.position = (column * 256, (texture_num % 32) * 64, 0)
+        sprite.draw()
+        label = pyglet.text.Label(sorted_hsv[(column * 32) + (texture_num % 32)][0],
+                                  x=(column * 256) + 72 ,
+                                  y=((texture_num % 32) * 64) + 24,
+                                  z=1,
+                                  color=sorted_hsv[(column * 32) + (texture_num % 32)][1],
+                                  height=16)
+
+        label.draw()
 
 @window.event
 def on_draw():
-    window.clear()
-    sprite.position = img_coords
+    #window.clear()
+    #sprite.position = img_coords
     label2.position = (0, 0, 0)
-    sprite.draw()
+    #sprite.draw()
     label2.draw()
-    if len(pointsList) > 31:
+    if len(pointsList) > 31 and False:
         pyglet.shapes.BezierCurve((pointsList[0][0], pointsList[0][1]),
                                   (pointsList[1][0], pointsList[1][1]),
                                   (pointsList[2][0], pointsList[2][1]),
@@ -173,7 +282,7 @@ def on_draw():
                                   t=1,
                                   segments=1000,
                                   thickness=2).draw()
-    if len(pointsList) > 1 and True:
+    if len(pointsList) > 1 and False:
         for line in range(0, len(pointsList) - 1):
             color = int((line/len(pointsList)) * 255)
             pyglet.shapes.Line(x=pointsList[line][0],
@@ -185,19 +294,27 @@ def on_draw():
 
 
 def image_update(dt):
-    global sprite
-    global img_coords
-    global pointsList
+    #global sprite
+    #global img_coords
+    #global pointsList
     global oldtime
-    img_coords = (random.randrange(0, window.width - round(sprite.width), 1),
-                  random.randrange(0, window.height - round(sprite.height), 1), 0)
-    pointsList.append(img_coords)
-    if len(pointsList) > 31:
-        pointsList = pointsList[-32:]
+    #img_coords = (random.randrange(0, window.width - round(sprite.width), 1),
+    #              random.randrange(0, window.height - round(sprite.height), 1), 0)
+    #pointsList.append(img_coords)
+    #if len(pointsList) > 31:
+    #    pointsList = pointsList[-32:]
 
-    label2.text = str(1//(time.time()-oldtime))
+    #label2.text = str(1//(time.time()-oldtime))
     oldtime = time.time()
 
 pyglet.clock.schedule_interval(image_update, 1/30)
+
+window.clear()
+pyglet.clock.schedule_interval(draw_icons, 1)
+
+#def rand_width(dt):
+#    global window
+#    window.width = random.randrange(256, 2048)
+#pyglet.clock.schedule_interval(rand_width, 1)
 
 pyglet.app.run()
